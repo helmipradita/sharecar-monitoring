@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    server: '${SERVER_NAME}'
+    env: '${SERVER_ENV}'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+scrape_configs:
+  # Local node_exporter
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['node_exporter:9100']
+        labels:
+          service: 'node_exporter'
+          server: '${SERVER_NAME}'
+          env: '${SERVER_ENV}'
+
+  # Local postgres_exporter - DISABLED: requires credentials
+  # - job_name: 'postgres_exporter'
+  #   static_configs:
+  #     - targets: ['postgres_exporter:9187']
+  #       labels:
+  #         service: 'postgres_exporter'
+  #         server: '${SERVER_NAME}'
+  #         env: '${SERVER_ENV}'
+
+  # Local redis_exporter - DISABLED: requires credentials
+  # - job_name: 'redis_exporter'
+  #   static_configs:
+  #     - targets: ['redis_exporter:9121']
+  #       labels:
+  #         service: 'redis_exporter'
+  #         server: '${SERVER_NAME}'
+  #         env: '${SERVER_ENV}'

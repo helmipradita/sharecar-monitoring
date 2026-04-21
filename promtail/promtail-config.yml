@@ -1,0 +1,47 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 9081
+
+positions:
+  filename: /var/promtail/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: ""
+    timeout: 10s
+    batchwait: 1s
+    batchsize: 102400
+
+scrape_configs:
+  # Application logs - Sharecar Core API
+  - job_name: 'sharecar-core-api'
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: 'sharecar-core-api'
+          server: '${SERVER_NAME}'
+          env: '${SERVER_ENV}'
+          __path__: '/var/log/sharecar-core-api/*.log'
+
+  # Application logs - Sharecar Mobile API
+  - job_name: 'sharecar-mobile-api'
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: 'sharecar-mobile-api'
+          server: '${SERVER_NAME}'
+          env: '${SERVER_ENV}'
+          __path__: '/var/log/sharecar-mobile-api/*.log'
+
+  # System logs - syslog
+  - job_name: 'syslog'
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: 'syslog'
+          server: '${SERVER_NAME}'
+          env: '${SERVER_ENV}'
+          __path__: '/var/log/syslog'
