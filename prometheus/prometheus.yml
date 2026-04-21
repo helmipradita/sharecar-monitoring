@@ -11,10 +11,10 @@ alerting:
         - targets: []
 
 scrape_configs:
-  # Local node_exporter
+  # Local node_exporter (using localhost because node_exporter uses host network)
   - job_name: 'node_exporter'
     static_configs:
-      - targets: ['node_exporter:9100']
+      - targets: ['localhost:9100']
         labels:
           service: 'node_exporter'
           server: '${SERVER_NAME}'
