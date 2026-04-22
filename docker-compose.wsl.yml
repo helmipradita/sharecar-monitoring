@@ -1,0 +1,22 @@
+# WSL2 Docker Desktop override
+# Use: docker compose --profile full -f docker-compose.yml -f docker-compose.wsl.yml up -d
+#
+# This override disables services that require real Linux host filesystem mounts
+# which don't work in WSL2's virtualized environment.
+
+services:
+  # node_exporter needs root filesystem mount - doesn't work in WSL2
+  node_exporter:
+    command: ["/bin/true"]
+    volumes: []
+    network_mode: bridge
+    pid: ""
+
+  # promtail needs host log paths - disable or use dummy paths in WSL2
+  promtail:
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml.template:ro
+      # Create dummy log directory for WSL testing
+      - ./logs-dummy:/var/log/sharecar-core-api:ro
+      - ./logs-dummy:/var/log/sharecar-mobile-api:ro
+      - ./logs-dummy/syslog:/var/log/syslog:ro

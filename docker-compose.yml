@@ -20,6 +20,7 @@ services:
       - full
       - monitoring
       - no-grafana
+      # Exclude from wsl profile - requires real Linux host filesystem
 
   # postgres_exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:latest
@@ -87,6 +88,7 @@ services:
       - full
       - monitoring
       - no-grafana
+      # Exclude from wsl profile - requires host log paths
 
   loki:
     image: grafana/loki:3.4.0
