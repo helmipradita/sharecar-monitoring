@@ -19,6 +19,8 @@ scrape_configs:
           service: 'node_exporter'
           server: '${SERVER_NAME}'
           env: '${SERVER_ENV}'
+          nodename: '${SERVER_NAME}'
+          instance: '${SERVER_NAME}:9100'
 
   # Local postgres_exporter - DISABLED: requires credentials
   # - job_name: 'postgres_exporter'
