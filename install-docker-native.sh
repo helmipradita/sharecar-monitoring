@@ -2,9 +2,9 @@
 
 #=============================================================================
 # Docker Native Linux Installation Script for Amazon Linux 2023
-# Version: 1.0
-# Description: Uninstall Docker Desktop & Install Docker Engine Native
-# Docker Engine Version: 27.x (Stable as of 2026)
+# Version: 1.1
+# Description: Install Docker Engine from Amazon Linux 2023 repositories
+# Note: AL2023 has Docker in its own repositories - no external repo needed
 #=============================================================================
 
 set -e
@@ -30,7 +30,7 @@ print_banner() {
     echo -e "${CYAN}"
     echo "╔══════════════════════════════════════════════════════════════════╗"
     echo "║        Docker Native Linux Installer for Amazon Linux 2023        ║"
-    echo "║                  Version: 27.x (Stable - 2026)                      ║"
+    echo "║                  Using AL2023 Native Repositories                 ║"
     echo "╚══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
 }
@@ -209,13 +209,10 @@ install_dependencies() {
 add_docker_repo() {
     print_section "STEP 6: CONFIGURING DOCKER REPOSITORY"
 
-    print_info "Adding Docker official GPG key..."
-    sudo rpm --import https://download.docker.com/linux/centos/gpg 2>/dev/null || true
+    print_info "Amazon Linux 2023 uses Docker from its own repositories"
+    print_info "No external repository configuration needed"
 
-    print_info "Adding Docker repository..."
-    sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-
-    print_success "Docker repository configured"
+    print_success "Using Amazon Linux 2023 native Docker packages"
 }
 
 #=============================================================================
@@ -224,8 +221,8 @@ add_docker_repo() {
 install_docker_engine() {
     print_section "STEP 7: INSTALLING DOCKER ENGINE"
 
-    print_info "Installing Docker Engine 27.x (Latest Stable)..."
-    sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    print_info "Installing Docker from Amazon Linux 2023 repositories..."
+    sudo dnf install -y docker docker-compose
 
     print_success "Docker Engine installed"
 }
