@@ -2,9 +2,9 @@
 
 #=============================================================================
 # Docker Native Linux Installation Script for Amazon Linux 2023
-# Version: 1.2
-# Description: Install Docker Engine using official Docker repositories
-# Note: Uses Docker's CentOS repo with RHEL 9 compatibility for AL2023
+# Version: 2.0
+# Description: Install Docker using AWS recommended method for AL2023
+# Based on: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-docker.html
 #=============================================================================
 
 set -e
@@ -30,7 +30,7 @@ print_banner() {
     echo -e "${CYAN}"
     echo "╔══════════════════════════════════════════════════════════════════╗"
     echo "║        Docker Native Linux Installer for Amazon Linux 2023        ║"
-    echo "║             Using Official Docker Repositories (RHEL 9)           ║"
+    echo "║              Following AWS Recommended Method                     ║"
     echo "╚══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
 }
@@ -167,11 +167,11 @@ remove_old_packages() {
     print_info "Removing old Docker packages..."
     sudo dnf remove -y docker docker-client docker-client-latest docker-latest docker-latest-logrotate docker-logrotate docker-engine 2>/dev/null || true
 
-    print_info "Cleaning up old repository files..."
+    print_info "Cleaning up old repository files (if any)..."
     sudo rm -f /etc/yum.repos.d/docker-ce*.repo
     sudo dnf clean all
 
-    print_info "Cleaning up残留 files..."
+    print_info "Cleaning up residual files..."
     sudo rm -rf /var/lib/docker 2>/dev/null || true
     sudo rm -rf /var/lib/containerd 2>/dev/null || true
 
@@ -187,57 +187,33 @@ install_dependencies() {
     print_info "Updating system..."
     sudo dnf update -y -q
 
-    print_info "Installing dnf-plugins-core for repository management..."
-    sudo dnf install -y -q dnf-plugins-core
-
-    print_info "Checking required packages..."
-    # Amazon Linux 2023 already has curl-minimal and gnupg2-minimal
-    # Just check if curl and gpg commands are available
-    if command -v curl &> /dev/null; then
-        print_success "curl is available"
-    else
-        print_info "Installing curl..."
-        sudo dnf install -y -q curl-minimal
-    fi
-
-    if command -v gpg &> /dev/null; then
-        print_success "gpg is available"
-    else
-        print_info "Installing gnupg2..."
-        sudo dnf install -y -q gnupg2-minimal
-    fi
-
-    print_success "Dependencies checked"
+    print_success "System updated"
 }
 
 #=============================================================================
-# STEP 6: ADD DOCKER REPOSITORY
-#=============================================================================
-add_docker_repo() {
-    print_section "STEP 6: CONFIGURING DOCKER REPOSITORY"
-
-    print_info "Adding Docker's official GPG key..."
-    sudo rpm --import https://download.docker.com/linux/centos/gpg 2>/dev/null || true
-
-    print_info "Adding Docker repository (CentOS/RHEL 9 compatible for AL2023)..."
-    sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-
-    print_info "Fixing releasever for Amazon Linux 2023 compatibility..."
-    sudo sed -i 's/\$releasever/9/g' /etc/yum.repos.d/docker-ce.repo
-
-    print_success "Docker repository configured"
-}
-
-#=============================================================================
-# STEP 7: INSTALL DOCKER ENGINE
+# STEP 6: INSTALL DOCKER ENGINE
 #=============================================================================
 install_docker_engine() {
-    print_section "STEP 7: INSTALLING DOCKER ENGINE"
+    print_section "STEP 6: INSTALLING DOCKER ENGINE"
 
-    print_info "Installing Docker Engine, CLI, containerd, and plugins..."
-    sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    print_info "Installing Docker from Amazon Linux 2023 repositories..."
+    sudo dnf install -y docker
 
     print_success "Docker Engine installed"
+
+    # Install docker-compose plugin if available, otherwise use standalone
+    print_info "Checking for docker-compose plugin..."
+    if sudo dnf info docker-compose-plugin &>/dev/null; then
+        sudo dnf install -y docker-compose-plugin
+        print_success "Docker Compose plugin installed"
+    else
+        print_info "docker-compose-plugin not available in repos, will install standalone..."
+        # Install docker-compose standalone
+        DOCKER_COMPOSE_VERSION="v2.27.0"
+        sudo curl -SL "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        print_success "Docker Compose standalone installed"
+    fi
 }
 
 #=============================================================================
@@ -269,10 +245,10 @@ configure_user() {
 }
 
 #=============================================================================
-# STEP 10: VERIFY INSTALLATION
+# STEP 9: VERIFY INSTALLATION
 #=============================================================================
 verify_installation() {
-    print_section "STEP 10: VERIFICATION"
+    print_section "STEP 9: VERIFICATION"
 
     # Docker version
     if command -v docker &> /dev/null; then
@@ -283,9 +259,12 @@ verify_installation() {
         return 1
     fi
 
-    # Docker Compose version
+    # Docker Compose version (plugin or standalone)
     if docker compose version &> /dev/null; then
         DCVER=$(docker compose version)
+        echo -e "  ${GREEN}✓${NC} ${DCVER}"
+    elif command -v docker-compose &> /dev/null; then
+        DCVER=$(docker-compose --version)
         echo -e "  ${GREEN}✓${NC} ${DCVER}"
     else
         echo -e "  ${RED}✗${NC} Docker Compose not found"
@@ -313,7 +292,7 @@ verify_installation() {
 }
 
 #=============================================================================
-# STEP 11: POST-INSTALLATION SUMMARY
+# STEP 10: POST-INSTALLATION SUMMARY
 #=============================================================================
 print_summary() {
     print_section "INSTALLATION COMPLETE"
@@ -327,17 +306,16 @@ print_summary() {
     echo "  ╚══════╝ ╚═════╝ ╚══════╝╚═════╝  ╚═════╝ ╚══════╝"
     echo -e "${NC}"
 
-    echo -e "\n${CYAN}  Docker Engine Native Linux has been installed successfully!${NC}\n"
+    echo -e "\n${CYAN}  Docker Engine has been installed successfully from AL2023 repositories!${NC}\n"
 
     echo -e "  ${YELLOW}IMPORTANT NOTES:${NC}"
     echo -e "    ${YELLOW}•${NC} Log out and log back in OR run: ${GREEN}newgrp docker${NC}"
-    echo -e "    ${YELLOW}•${NC} Docker Compose v2 is now built-in: ${GREEN}docker compose${NC}"
-    echo -e "    ${YELLOW}•${NC} No more 'docker-compose' (v1) needed\n"
+    echo -e "    ${YELLOW}•${NC} Use ${GREEN}docker compose${NC} (v2 plugin) or ${GREEN}docker-compose${NC} (standalone)\n"
 
     echo -e "  ${CYAN}QUICK COMMANDS:${NC}"
     echo -e "    docker ps              ${GRAY}# List containers${NC}"
-    echo -e "    docker compose up -d  ${GRAY}# Start services${NC}"
-    echo -e "    docker compose down   ${GRAY}# Stop services${NC}\n"
+    echo -e "    docker compose up -d  ${GRAY}# Start services (plugin)${NC}"
+    echo -e "    docker-compose up -d  ${GRAY}# Start services (standalone)${NC}\n"
 
     echo -e "  ${CYAN}NEXT STEPS:${NC}"
     echo -e "    1. Log out and log back in"
@@ -357,7 +335,7 @@ main() {
         echo "  • Stop all running Docker containers"
         echo "  • Uninstall Docker Desktop"
         echo "  • Remove old Docker packages"
-        echo "  • Install Docker Engine Native Linux"
+        echo "  • Install Docker Engine from AL2023 repositories"
         echo ""
         read -p "Continue? (y/n): " -n 1 -r
         echo
@@ -372,7 +350,6 @@ main() {
     uninstall_docker_desktop
     remove_old_packages
     install_dependencies
-    add_docker_repo
     install_docker_engine
     start_docker
     configure_user
