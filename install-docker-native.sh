@@ -183,13 +183,24 @@ install_dependencies() {
     print_info "Updating system..."
     sudo dnf update -y -q
 
-    print_info "Installing required packages..."
-    sudo dnf install -y -q \
-        ca-certificates \
-        curl \
-        gnupg2
+    print_info "Checking required packages..."
+    # Amazon Linux 2023 already has curl-minimal and gnupg2-minimal
+    # Just check if curl and gpg commands are available
+    if command -v curl &> /dev/null; then
+        print_success "curl is available"
+    else
+        print_info "Installing curl..."
+        sudo dnf install -y -q curl-minimal
+    fi
 
-    print_success "Dependencies installed"
+    if command -v gpg &> /dev/null; then
+        print_success "gpg is available"
+    else
+        print_info "Installing gnupg2..."
+        sudo dnf install -y -q gnupg2-minimal
+    fi
+
+    print_success "Dependencies checked"
 }
 
 #=============================================================================
