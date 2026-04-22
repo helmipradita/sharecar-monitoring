@@ -84,8 +84,8 @@ check_system() {
     OS_INFO=$(cat /etc/system-release)
     print_success "OS Detected: $OS_INFO"
 
-    # Check if Amazon Linux 2023
-    if ! echo "$OS_INFO" | grep -q "Amazon Linux 2023"; then
+    # Check if Amazon Linux 2023 (various version formats)
+    if ! echo "$OS_INFO" | grep -qE "Amazon Linux.*2023"; then
         print_warning "This script is designed for Amazon Linux 2023"
         print_info "Your OS: $OS_INFO"
         read -p "Continue anyway? (y/n): " -n 1 -r
@@ -93,6 +93,8 @@ check_system() {
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             exit 1
         fi
+    else
+        print_success "Amazon Linux 2023 detected - proceeding with installation"
     fi
 
     # Check current Docker installation
