@@ -2,9 +2,9 @@
 
 #=============================================================================
 # Docker Native Linux Installation Script for Amazon Linux 2023
-# Version: 1.1
-# Description: Install Docker Engine from Amazon Linux 2023 repositories
-# Note: AL2023 has Docker in its own repositories - no external repo needed
+# Version: 1.2
+# Description: Install Docker Engine using official Docker repositories
+# Note: Uses Docker's CentOS repo with RHEL 9 compatibility for AL2023
 #=============================================================================
 
 set -e
@@ -30,7 +30,7 @@ print_banner() {
     echo -e "${CYAN}"
     echo "╔══════════════════════════════════════════════════════════════════╗"
     echo "║        Docker Native Linux Installer for Amazon Linux 2023        ║"
-    echo "║                  Using AL2023 Native Repositories                 ║"
+    echo "║             Using Official Docker Repositories (RHEL 9)           ║"
     echo "╚══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
 }
@@ -167,6 +167,10 @@ remove_old_packages() {
     print_info "Removing old Docker packages..."
     sudo dnf remove -y docker docker-client docker-client-latest docker-latest docker-latest-logrotate docker-logrotate docker-engine 2>/dev/null || true
 
+    print_info "Cleaning up old repository files..."
+    sudo rm -f /etc/yum.repos.d/docker-ce*.repo
+    sudo dnf clean all
+
     print_info "Cleaning up残留 files..."
     sudo rm -rf /var/lib/docker 2>/dev/null || true
     sudo rm -rf /var/lib/containerd 2>/dev/null || true
@@ -182,6 +186,9 @@ install_dependencies() {
 
     print_info "Updating system..."
     sudo dnf update -y -q
+
+    print_info "Installing dnf-plugins-core for repository management..."
+    sudo dnf install -y -q dnf-plugins-core
 
     print_info "Checking required packages..."
     # Amazon Linux 2023 already has curl-minimal and gnupg2-minimal
@@ -209,10 +216,16 @@ install_dependencies() {
 add_docker_repo() {
     print_section "STEP 6: CONFIGURING DOCKER REPOSITORY"
 
-    print_info "Amazon Linux 2023 uses Docker from its own repositories"
-    print_info "No external repository configuration needed"
+    print_info "Adding Docker's official GPG key..."
+    sudo rpm --import https://download.docker.com/linux/centos/gpg 2>/dev/null || true
 
-    print_success "Using Amazon Linux 2023 native Docker packages"
+    print_info "Adding Docker repository (CentOS/RHEL 9 compatible for AL2023)..."
+    sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+    print_info "Fixing releasever for Amazon Linux 2023 compatibility..."
+    sudo sed -i 's/\$releasever/9/g' /etc/yum.repos.d/docker-ce.repo
+
+    print_success "Docker repository configured"
 }
 
 #=============================================================================
@@ -221,8 +234,8 @@ add_docker_repo() {
 install_docker_engine() {
     print_section "STEP 7: INSTALLING DOCKER ENGINE"
 
-    print_info "Installing Docker from Amazon Linux 2023 repositories..."
-    sudo dnf install -y docker docker-compose
+    print_info "Installing Docker Engine, CLI, containerd, and plugins..."
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
     print_success "Docker Engine installed"
 }
