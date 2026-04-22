@@ -187,11 +187,7 @@ install_dependencies() {
     sudo dnf install -y -q \
         ca-certificates \
         curl \
-        gnupg \
-        lsb-release \
-        device-mapper \
-        device-mapper-persistent-data \
-        lvm2
+        gnupg2
 
     print_success "Dependencies installed"
 }
